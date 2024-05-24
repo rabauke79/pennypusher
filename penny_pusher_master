@@ -1,0 +1,65 @@
+/* Code for master device - listening to sensor to send a signal to the slaves 
+ * 
+ * Code runs on an Arduino Nano (ATMega328P)
+ * 
+ * Initial version 0.1
+ * - listen to sensor for a coin and send a signal to slaves
+ *
+ * Verbesserungsvorschlag:
+ * mit millis arbeiten, um mehrere prozesse gleichzeitig zu bearbeiten
+ *
+ * Achtung - Lichtschranke funkntioniert nur mit 3.3v - nicht mit 5V!
+ *
+*/
+
+#include <Wire.h>
+
+bool signal_status = 0;                       // Status der Lichtschranke - Wenn die Lichtschranke unterbrochen wird, speichert der Mikrocontroller den Wert "1", ansonsten "0"
+bool last_signal_status = 0;                  // Vorherige Status der Lichtschranke
+long int zaehler = 0;                         // Zähler - wird später ein Wert hochgezählt wenn sich der Status ändert
+const int LichtschrankeInputPin_right = 8;          // Pinnummer an dem die Lichtschranke hängt
+const int NotifyOutputPin_right = 7;                // SignalPin für weitere Arduinos bei Coineinwurf (HIGH)
+char StatusOutputPin [ ] = "LOW";
+
+void setup()
+
+{ //Hier beginnt das Setup.
+  Serial.begin(9600);                       // Initialisierung des seriellen Monitor
+  Serial.println("Master: Neuer Programmstart");    // kurze Info, dass das Programm neu gestartet wurde
+  pinMode(LichtschrankeInputPin_right, INPUT);    // Lichtschrankenpin als Input definieren
+  pinMode(NotifyOutputPin_right, OUTPUT);         // SingalPin als Output definieren
+  digitalWrite(NotifyOutputPin_right, LOW);       // SignalPin auf Low setzen
+  Serial.print("Master: SingnalPin Rechts ");              // kurze Info über den SignalPin - muss zum Programmstart LOW bzw. 0 sein!
+  Serial.println(digitalRead(NotifyOutputPin_right)); // Ausgabe des SignalPin
+}
+
+void loop()
+{
+  lichtschranke();
+}
+
+void lichtschranke()
+{ //Hier beginnt der Hauptteil
+  signal_status = digitalRead(LichtschrankeInputPin_right);   // Die Signalausgabe der Lichtschranke wird ausgelesen und unter der Variable „signal_status“ gespeichert.
+  if (signal_status != last_signal_status) // Falls sich der Signal_status ändert und ungleich dem vorherigen Zustand ist
+  {
+    if (signal_status == LOW)              // Falls die Lichtschrank 0 bzw. LOW ausgibt
+    {
+      zaehler++;                           // Zähler einen Wert hoch
+      Serial.print("Master: Zähler: ");            // Schreibe "Zähler: " in den seriellen Monitor
+      Serial.println(zaehler);             // Schreibe den Wert der Variablen zaehler in den seriellen Monitor
+      digitalWrite(NotifyOutputPin_right, HIGH); // SignalPin wird auf HIGH (1) gesetzt
+      Serial.print("Master: SingnalPin ");         // Ausgabe des Status des SignalPins
+      Serial.println(digitalRead(NotifyOutputPin_right)); // Ausgabe des Status des Sginal Pins
+      digitalWrite(NotifyOutputPin_right, LOW); // SignalPin wird wieder auf LOW (0) gesetzt
+      Serial.print("Master: SingnalPin Rechts");        // Ausgabe des Status des Sginal Pins
+      Serial.println(digitalRead(NotifyOutputPin_right));// Ausgabe des Status des Sginal Pins
+      Serial.println();
+
+
+    }
+    //    delay(50);                             // Warte 5ms - vermutlich nicht nötig
+    last_signal_status = signal_status;    // Aktualisieren den last_signal_status mit dem Wert des signal_status
+
+  }
+}
