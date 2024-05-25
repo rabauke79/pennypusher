@@ -1,4 +1,3 @@
-#include <U8g2lib.h>
 
 /* Code for slave devices - they are waiting for getting a signal and showing
    grafix / updated per coin lane.
@@ -17,7 +16,13 @@
    - added blinking text to insert more coins
    - improved display for up to 9999 coins
 
+   Version 0.4
+   - added flashing "Danke" message when coin inserted
+   - fixed minor UI issues
+
 */
+
+#include <U8g2lib.h>
 
 
 // Initialisiere das Display
@@ -45,16 +50,13 @@ void setup() {
 }
 
 void loop() {
-
-
   // Warte 2 Sekunden, wenn der Interrupt ausgelöst wurde
   if (millis() - lastInterruptTime < 2000) {
     // Zeige den Text "juhu" auf dem Display an
     u8g2.firstPage();
     do {
-      u8g2.setFont(u8g2_font_ncenB08_tr);
-      u8g2.setCursor(0, 10);
-      u8g2.print("juhu");
+      drawInsertedCoins();
+
     } while (u8g2.nextPage());
   }
   else
@@ -89,7 +91,12 @@ void drawFrameWaitScreen() {
 void drawCoinText() {
   u8g2.setFont(u8g2_font_ncenB08_tr);
   u8g2.setCursor(42, 42);
-  u8g2.print("Muenzen");
+  if (anzahlMuenzen == 1) {
+    u8g2.print("Muenze");
+  }
+  else {
+    u8g2.print("Muenzen");
+  }
 }
 
 void drawCoinCounter() {
@@ -123,7 +130,28 @@ void drawInsertCoins() {
 
   if (blinkState == true) {     //schreibe den Text nur, falls blinkState erfüllt ist
     u8g2.setFont(u8g2_font_ncenB08_tr);
-    u8g2.setCursor(8, 57);
+    u8g2.setCursor(10, 57);
     u8g2.print("Wirf Muenzen ein!");
+  }
+}
+
+void drawInsertedCoins() {
+  unsigned long blinkCurrentMillis = millis();
+  if (blinkCurrentMillis - blinkPreviousMillis >= 100) {
+
+    blinkPreviousMillis = blinkCurrentMillis;
+    blinkState = !blinkState;
+  }
+
+  if (blinkState == true) {     //schreibe den Text nur, falls blinkState erfüllt ist
+    u8g2.setFont(u8g2_font_ncenB24_tr);
+    u8g2.setDrawColor(1);
+    u8g2.setCursor(0, 47);
+    u8g2.print("DANKE");
+  }
+  else
+  {
+    u8g2.setDrawColor(1);
+    u8g2.drawBox(0, 0, 128, 64);
   }
 }
